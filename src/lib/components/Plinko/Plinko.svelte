@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { writable } from 'svelte/store';
-  import { plinkoEngine, balance as balanceStore } from '$lib/stores/game';
+  import { plinkoEngine } from '$lib/stores/game';
   import CircleNotch from 'phosphor-svelte/lib/CircleNotch';
   import type { Action } from 'svelte/action';
   import BinsRow from './BinsRow.svelte';
@@ -10,10 +8,6 @@
 
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
-  // User ID (can also use a writable store if needed elsewhere)
-  let userId: string | null = null;
-
-  // Initialize Plinko engine
   const initPlinko: Action<HTMLCanvasElement> = (node) => {
     $plinkoEngine = new PlinkoEngine(node);
     $plinkoEngine.start();
@@ -24,35 +18,6 @@
       },
     };
   };
-
-  // Lifecycle function to set up `postMessage` listener
-  onMount(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Verify message origin
-      if (event.origin !== 'https://miniappre.vercel.app') {
-        console.warn('Ignored message from untrusted origin:', event.origin);
-        return;
-      }
-
-      const { type, userId: incomingUserId, totalBalance } = event.data;
-
-      if (type === 'SET_USER_INFO') {
-        console.log('Received user info:', { incomingUserId, totalBalance });
-
-        // Update balance store and userId
-        userId = incomingUserId;
-        balanceStore.set(totalBalance);
-      }
-    };
-
-    // Add listener for messages
-    window.addEventListener('message', handleMessage);
-
-    // Cleanup listener on component destroy
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  });
 </script>
 
 <div class="relative bg-gray-900">
