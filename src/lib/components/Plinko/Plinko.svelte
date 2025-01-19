@@ -51,10 +51,10 @@
   onMount(() => {
     function handleMessage(event: MessageEvent) {
       // Check origin for security
-      if (event.origin !== 'https://miniappre.vercel.app') {
-        console.warn('Ignored message from untrusted origin:', event.origin);
-        return;
-      }
+      if (!event.origin.includes('miniappre.vercel.app')) {
+  console.warn('Ignored message from untrusted origin:', event.origin);
+  return;
+}
 
       const { type, userId: incomingUserId, sessionBalance: incomingBal, sessionId: incomingSessionId } = event.data || {};
 
