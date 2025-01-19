@@ -8,21 +8,20 @@
   import LastWins from './LastWins.svelte';
   import PlinkoEngine from './PlinkoEngine';
 
-  // Plinko engine config
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
-  /**
-   * The local session balance used for Plinko bets.
-   * This is separate from your Firestore or parent "real" balance.
-   */
+  // The local session balance used for Plinko bets (separate from Firestore/parent)
   const sessionBalance = writable<number>(0);
 
-  // Track basic session info
+  // Track if we've already ended the session, so we don’t end it multiple times
+  let sessionEnded = false;
+
+  // We store basic session info
   let sessionId: string | null = null;
   let userId: string | null = null;
-  let originalBalance = 0; // so we can compute netProfit = final - original
+  let originalBalance = 0; // so netProfit = (final - original)
 
-  // Store reference to the Plinko engine instance
+  // Initialize the Plinko engine
   const initPlinko: Action<HTMLCanvasElement> = (node) => {
     $plinkoEngine = new PlinkoEngine(node);
     $plinkoEngine.start();
@@ -34,27 +33,15 @@
     };
   };
 
-  /**
-   * Listen for 'INIT_SESSION' message from parent.
-   * The parent (mini app) should send something like:
-   * 
-   * iframe.contentWindow.postMessage(
-   *   {
-   *     type: 'INIT_SESSION',
-   *     userId: 'abc123',
-   *     sessionBalance: 100,
-   *     sessionId: 'someSessionDocId' // optional
-   *   },
-   *   'https://miniappre.vercel.app'
-   * );
-   */
+  // Called by the parent via postMessage({ type: 'INIT_SESSION', ... })
+  // to set up the local session data
   onMount(() => {
     function handleMessage(event: MessageEvent) {
-      // Check origin for security
+      // For security, accept messages only if the origin is your parent domain
       if (!event.origin.includes('miniappre.vercel.app')) {
-  console.warn('Ignored message from untrusted origin:', event.origin);
-  return;
-}
+        console.warn('Ignored message from untrusted origin:', event.origin);
+        return;
+      }
 
       const { type, userId: incomingUserId, sessionBalance: incomingBal, sessionId: incomingSessionId } = event.data || {};
 
@@ -62,7 +49,7 @@
         console.log('Received INIT_SESSION from parent:', { incomingUserId, incomingBal, incomingSessionId });
 
         userId = incomingUserId;
-        sessionId = incomingSessionId; // If you need to track a session doc in Firestore
+        sessionId = incomingSessionId; 
         sessionBalance.set(incomingBal);
         originalBalance = incomingBal;
       }
@@ -70,22 +57,45 @@
 
     window.addEventListener('message', handleMessage);
 
+    // ====== AUTO-END SESSION ON UNLOAD OR VISIBILITY ======
+
+    function handleBeforeUnload() {
+      endSession(); 
+    }
+    function handleVisibilityChange() {
+      // If the document is hidden (user switches app/tab),
+      // you can attempt to end the session immediately
+      if (document.hidden) {
+        endSession();
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup when component is destroyed
     return () => {
       window.removeEventListener('message', handleMessage);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   });
 
   /**
    * END_SESSION: Called when the user finishes Plinko or navigates away.
-   * 
-   * - finalBalance = get(sessionBalance)
-   * - netProfit = finalBalance - originalBalance
-   * - Then we postMessage back to the parent (mini app).
+   *
+   * netProfit = finalBalance - originalBalance
+   * We then postMessage back to the parent with { type: 'END_SESSION', netProfit }.
    */
   function endSession() {
+    // Avoid ending multiple times
+    if (sessionEnded) return;
+    sessionEnded = true;
+
     const finalBalance = get(sessionBalance);
     const netProfit = finalBalance - originalBalance;
 
+    // Post message to the parent (React page)
     window.parent.postMessage(
       {
         type: 'END_SESSION',
@@ -108,7 +118,7 @@
         </div>
       {/if}
 
-      <!-- Canvas that runs the PlinkoEngine -->
+      <!-- The Plinko canvas -->
       <canvas
         use:initPlinko
         width={WIDTH}
@@ -117,16 +127,15 @@
       ></canvas>
     </div>
 
-    <!-- Display your bins, session stats, etc. -->
     <BinsRow />
   </div>
 
-  <!-- Optional last-wins display -->
+  <!-- Optional side display for last wins, etc. -->
   <div class="absolute right-[5%] top-1/2 -translate-y-1/2">
     <LastWins />
   </div>
 
-  <!-- Example button to end the session -->
+  <!-- Example button to manually end the session -->
   <div class="absolute left-[5%] bottom-[5%]">
     <button
       class="bg-red-500 text-white px-4 py-2 rounded"
