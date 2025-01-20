@@ -7,7 +7,7 @@ async function setBetAmount(page: Page, amount: string) {
   await betAmountInput.blur();
 }
 
-test.describe('Balance', () => {
+test.describe('Balance', () => {   
   
 
   test('can load balance from local storage', async ({ page, context }) => {
