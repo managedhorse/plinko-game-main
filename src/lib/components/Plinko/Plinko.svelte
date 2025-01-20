@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { writable, get } from 'svelte/store';
-  import { plinkoEngine, balance as oldBalance } from '$lib/stores/game'; 
+  import { plinkoEngine, balance as oldBalance } from '$lib/stores/game';
   import CircleNotch from 'phosphor-svelte/lib/CircleNotch';
   import type { Action } from 'svelte/action';
   import BinsRow from './BinsRow.svelte';
@@ -10,21 +10,22 @@
 
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
-  // The local session balance used for Plinko bets
+  // Local store for the Plinko session’s visible balance:
   const sessionBalance = writable<number>(0);
 
+  // Basic flags and variables to manage session lifecycle:
   let sessionEnded = false;
   let sessionId: string | null = null;
   let userId: string | null = null;
-  let originalBalance = 0;
-  
-  // 1) A local boolean that tracks if we've received INIT_SESSION yet
+  let originalBalance = 0; // so final netProfit = finalBalance - originalBalance
+
+  // Show spinner until the parent sends INIT_SESSION
   let isLoadingSession = true;
 
+  // Initialize the Plinko engine when our canvas mounts:
   const initPlinko: Action<HTMLCanvasElement> = (node) => {
     $plinkoEngine = new PlinkoEngine(node);
     $plinkoEngine.start();
-
     return {
       destroy: () => {
         $plinkoEngine?.stop();
@@ -32,31 +33,58 @@
     };
   };
 
+  // Call this after each spin to store partial results in localStorage
+  function registerSpinProfit(spinProfit: number) {
+    // "plinko_unapplied" is the key we store partial results under
+    const storedJson = localStorage.getItem('plinko_unapplied') || '[]';
+    const data = JSON.parse(storedJson);
+
+    // Push a small object with sessionId, spinProfit, timestamp:
+    data.push({
+      sessionId,
+      spinProfit,
+      timestamp: Date.now()
+    });
+
+    localStorage.setItem('plinko_unapplied', JSON.stringify(data));
+
+    // Also update this session’s in-memory balance:
+    sessionBalance.update(b => b + spinProfit);
+  }
+
+  // Example function: after each ball drop completes, call onSpinComplete
+  // to record the netProfit for that spin.
+  // You can call this from your Plinko engine callback or a "Drop Ball" handler, etc.
+  function onSpinComplete(spinProfit: number) {
+    registerSpinProfit(spinProfit);
+  }
+
+  // Called once on component mount:
   onMount(() => {
     function handleMessage(event: MessageEvent) {
-      console.log('Child received message from origin:', event.origin);
+      // The parent will post { type: 'INIT_SESSION', userId, sessionBalance, sessionId }
       const { type, userId: incomingUserId, sessionBalance: incomingBal, sessionId: incomingSessionId } = event.data || {};
 
       if (type === 'INIT_SESSION') {
-        console.log('Received INIT_SESSION from parent:', { incomingUserId, incomingBal, incomingSessionId });
-
         userId = incomingUserId;
         sessionId = incomingSessionId;
-        
-        // Update local store and the old balance store
-        sessionBalance.set(incomingBal);
         originalBalance = incomingBal;
+
+        sessionBalance.set(incomingBal);
+        // Also update the older "balance" store from game.ts if needed:
         oldBalance.set(incomingBal);
 
-        // 2) Now we have the user's real balance. Stop showing the spinner:
+        // We can now show the main UI:
         isLoadingSession = false;
+        console.log('INIT_SESSION arrived:', { userId, sessionId, originalBalance });
       }
     }
 
     window.addEventListener('message', handleMessage);
 
+    // If the user forcibly closes or hides the tab, we run endSession:
     function handleBeforeUnload() {
-      endSession(); 
+      endSession();
     }
     function handleVisibilityChange() {
       if (document.hidden) {
@@ -67,6 +95,7 @@
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Cleanup
     return () => {
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -74,6 +103,7 @@
     };
   });
 
+  // Called once the user leaves or the session is forcibly closed:
   function endSession() {
     if (sessionEnded) return;
     sessionEnded = true;
@@ -81,6 +111,7 @@
     const finalBalance = get(sessionBalance);
     const netProfit = finalBalance - originalBalance;
 
+    // Post final netProfit back to parent:
     window.parent.postMessage(
       {
         type: 'END_SESSION',
@@ -90,13 +121,12 @@
       'https://miniappre.vercel.app'
     );
 
-    console.log('Sent END_SESSION to parent:', { netProfit, sessionId });
+    console.log('END_SESSION posted with netProfit:', netProfit);
   }
 </script>
 
-<!-- 3) If isLoadingSession is true, show spinner; otherwise show the Plinko UI -->
+<!-- If still loading, show spinner; else show the Plinko UI. -->
 {#if isLoadingSession}
-  <!-- A very simple loading UI -->
   <div class="flex h-screen w-screen items-center justify-center bg-gray-900 text-white">
     <CircleNotch class="size-12 animate-spin" weight="bold" />
     <span class="ml-3 text-lg">Loading session...</span>
@@ -118,9 +148,12 @@
           class="absolute inset-0 h-full w-full"
         ></canvas>
       </div>
+
+      <!-- Example Bins, can call onSpinComplete(...) for partial results. -->
       <BinsRow />
     </div>
 
+    <!-- Optional last wins display. -->
     <div class="absolute right-[5%] top-1/2 -translate-y-1/2">
       <LastWins />
     </div>
