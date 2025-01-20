@@ -48,14 +48,17 @@
   }
 
   onMount(() => {
-  function handleMessage(event: MessageEvent) {
-    // Optionally check event.origin for security
-    const { type, userId: incomingUserId } = event.data || {};
-    if (type === 'INIT_SESSION' && incomingUserId) {
-  userId = incomingUserId;
-  fetchPlinkoBalance(userId!); // Using the non-null assertion operator
-}
+    window.addEventListener('message', handleMessage);
+
+    function handleMessage(event: MessageEvent) {
+  console.log('Received message:', event.data, 'from', event.origin); 
+  const { type, userId: incomingUserId } = event.data || {};
+  if (type === 'INIT_SESSION' && incomingUserId) {
+    console.log('INIT_SESSION received with userId:', incomingUserId);
+    userId = incomingUserId;
+    fetchPlinkoBalance(incomingUserId);
   }
+}
 
   window.addEventListener('message', handleMessage);
 
