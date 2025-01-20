@@ -7,20 +7,15 @@
   import BinsRow from './BinsRow.svelte';
   import LastWins from './LastWins.svelte';
   import PlinkoEngine from './PlinkoEngine';
- 
+  import { doc, getDoc, updateDoc } from 'firebase/firestore';
+  import { db } from '$lib/firebase';  // Adjust the path as necessary
 
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
-  // The local session balance used for Plinko bets (separate from Firestore/parent)
+  // Local store for the user's Plinko balance
   const sessionBalance = writable<number>(0);
 
-  // Track if we've already ended the session, so we don’t end it multiple times
-  let sessionEnded = false;
-
-  // We store basic session info
-  let sessionId: string | null = null;
   let userId: string | null = null;
-  let originalBalance = 0; // so netProfit = (final - original)
 
   // Initialize the Plinko engine
   const initPlinko: Action<HTMLCanvasElement> = (node) => {
@@ -34,74 +29,54 @@
     };
   };
 
-  // onMount for message handling, etc.
+  // Function to fetch the plinkoBalance from Firestore
+  async function fetchPlinkoBalance(userId: string) {
+    const userRef = doc(db, 'telegramUsers', userId.toString());
+    try {
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const plinkoBal = userData.plinkoBalance || 0;
+        sessionBalance.set(plinkoBal);
+        oldBalance.set(plinkoBal);
+      } else {
+        console.error('User not found in Firestore for ID', userId);
+      }
+    } catch (err) {
+      console.error('Error fetching plinko balance:', err);
+    }
+  }
+
   onMount(() => {
-    function handleMessage(event: MessageEvent) {
-      console.log('Child received message from origin:', event.origin);
-      // Skip origin check for now, or loosen it
+  function handleMessage(event: MessageEvent) {
+    // Optionally check event.origin for security
+    const { type, userId: incomingUserId } = event.data || {};
+    if (type === 'INIT_SESSION' && incomingUserId) {
+  userId = incomingUserId;
+  fetchPlinkoBalance(userId!); // Using the non-null assertion operator
+}
+  }
 
-      const { type, userId: incomingUserId, sessionBalance: incomingBal, sessionId: incomingSessionId } = event.data || {};
-      if (type === 'INIT_SESSION') {
-        console.log('Received INIT_SESSION from parent:', { incomingUserId, incomingBal, incomingSessionId });
+  window.addEventListener('message', handleMessage);
 
-        userId = incomingUserId;
-        sessionId = incomingSessionId;
-        
-        // 1) set your new local store
-        sessionBalance.set(incomingBal);
-        originalBalance = incomingBal;
 
-        // 2) also update the old "balance" store from game.ts
-        oldBalance.set(incomingBal);
+    const interval = setInterval(async () => {
+      if (!userId) return;
+      const currentBal = get(sessionBalance);
+      const userRef = doc(db, 'telegramUsers', userId.toString());
+      try {
+        await updateDoc(userRef, { plinkoBalance: currentBal });
+        console.log('Updated plinkoBalance in Firestore:', currentBal);
+      } catch (err) {
+        console.error('Error updating plinkoBalance:', err);
       }
-    }
-
-    window.addEventListener('message', handleMessage);
-
-    // ====== AUTO-END SESSION ON UNLOAD OR VISIBILITY ======
-    function handleBeforeUnload() {
-      endSession(); 
-    }
-    function handleVisibilityChange() {
-      if (document.hidden) {
-        endSession();
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    }, 60000); // Update every 1 minute
 
     return () => {
       window.removeEventListener('message', handleMessage);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
     };
   });
-
-  /**
-   * END_SESSION: Called when the user finishes Plinko or navigates away.
-   * netProfit = finalBalance - originalBalance
-   * Then we postMessage back to the parent with { type: 'END_SESSION', netProfit }.
-   */
-  function endSession() {
-    if (sessionEnded) return;
-    sessionEnded = true;
-
-    const finalBalance = get(sessionBalance);
-    const netProfit = finalBalance - originalBalance;
-
-    // Post message back to the parent (React page)
-    window.parent.postMessage(
-      {
-        type: 'END_SESSION',
-        netProfit,
-        sessionId
-      },
-      'https://miniappre.vercel.app' // The target origin can remain your main domain
-    );
-
-    console.log('Sent END_SESSION to parent:', { netProfit, sessionId });
-  }
 </script>
 
 <div class="relative bg-gray-900">
@@ -128,15 +103,5 @@
   <!-- Optional side display for last wins, etc. -->
   <div class="absolute right-[5%] top-1/2 -translate-y-1/2">
     <LastWins />
-  </div>
-
-  <!-- Button to manually end the session -->
-  <div class="absolute left-[5%] bottom-[5%]">
-    <button
-      class="bg-red-500 text-white px-4 py-2 rounded"
-      on:click={endSession}
-    >
-      End Session
-    </button>
   </div>
 </div>
