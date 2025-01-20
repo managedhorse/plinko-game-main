@@ -157,5 +157,5 @@
     <div class="absolute right-[5%] top-1/2 -translate-y-1/2">
       <LastWins />
     </div>
-  </div>
+</div>
 {/if}
