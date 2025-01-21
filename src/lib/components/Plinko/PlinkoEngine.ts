@@ -210,7 +210,14 @@ class PlinkoEngine {
     Matter.Composite.add(this.engine.world, ball);
 
     betAmountOfExistingBalls.update((value) => ({ ...value, [ball.id]: this.betAmount }));
-    balance.update((balance) => balance - this.betAmount);
+    
+
+    // Single update combining deduction and localStorage update
+  balance.update((currentBalance) => {
+    const newBalance = currentBalance - this.betAmount;
+    localStorage.setItem('plinkoBalance', newBalance.toString());
+    return newBalance;
+  });
   }
 
   /**
@@ -274,12 +281,18 @@ class PlinkoEngine {
           profit,
         },
       ]);
-      totalProfitHistory.update((history) => {
-        const lastTotalProfit = history.slice(-1)[0];
-        return [...history, lastTotalProfit + profit];
-      });
-      balance.update((balance) => balance + payoutValue);
-    }
+      // Single update combining addition and localStorage update
+    balance.update((currentBalance) => {
+      const newBalance = currentBalance + payoutValue;
+      localStorage.setItem('plinkoBalance', newBalance.toString());
+      return newBalance;
+    });
+
+    totalProfitHistory.update((history) => {
+      const lastTotalProfit = history.slice(-1)[0];
+      return [...history, lastTotalProfit + profit];
+    });
+  }
 
     Matter.Composite.remove(this.engine.world, ball);
     betAmountOfExistingBalls.update((value) => {
