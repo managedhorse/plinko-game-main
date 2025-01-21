@@ -31,9 +31,9 @@
     };
   };
 
-  // Helper function to always round numbers to two decimals
+  // Helper function: always return a number rounded to two decimals
   function roundToTwo(num: number): number {
-    return Math.round(num * 100) / 100;
+    return parseFloat(num.toFixed(2));
   }
 
   // Function to fetch the plinkoBalance from Firestore (fallback)
@@ -49,7 +49,7 @@
         console.log(`Fetched plinkoBalance for userId ${userId}: ${plinkoBal}`);
         sessionBalance.set(plinkoBal);
         oldBalance.set(plinkoBal);
-        // Store as a string with two decimals
+        // Store as a string with exactly two decimals
         localStorage.setItem('plinkoBalance', plinkoBal.toFixed(2));
       } else {
         console.error('User not found in Firestore for ID', userId);
@@ -59,7 +59,7 @@
     }
   }
 
-  // Optionally, if you want to sync the local balance at mount, you might call this later
+  // Function to sync Firestore from local storage (if needed)
   async function syncFirestoreWithLocalStorage() {
     if (!userId) {
       console.error("User ID not available. Cannot sync balance.");
