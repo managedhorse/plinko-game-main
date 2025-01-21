@@ -43,6 +43,7 @@
         console.log(`Fetched plinkoBalance for userId ${userId}: ${plinkoBal}`);
         sessionBalance.set(plinkoBal);
         oldBalance.set(plinkoBal);
+        localStorage.setItem('plinkoBalance', plinkoBal.toString());
       } else {
         console.error('User not found in Firestore for ID', userId);
       }
@@ -56,11 +57,31 @@
     
     function handleMessage(event: MessageEvent) {
       console.log('Received message:', event.data, 'from', event.origin);
-      const { type, userId: incomingUserId } = event.data || {};
+      const { type, userId: incomingUserId, requestId } = event.data || {};
+      
       if (type === 'USERID' && incomingUserId) {
         console.log('USERID received:', incomingUserId);
         userId = incomingUserId;
         fetchPlinkoBalance(incomingUserId);
+      }
+
+      if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
+        console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
+        if (userId) {
+          const plinkoBal = get(sessionBalance);
+          console.log(`Sending plinkoBalance to parent: ${plinkoBal}`);
+          window.parent.postMessage(
+            { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: plinkoBal },
+            'https://miniappre.vercel.app' // Replace with your parent's origin
+          );
+        } else {
+          console.error("Cannot transfer balance: userId is not set.");
+          // Optionally, send an error response
+          window.parent.postMessage(
+            { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
+            'https://miniappre.vercel.app' // Replace with your parent's origin
+          );
+        }
       }
     }
 
@@ -68,9 +89,10 @@
     
     // Request userId from parent
     console.log("Requesting userId from parent...");
-    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app');
+    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app'); // Replace with your parent's origin
     console.log("REQUEST_USERID message sent to parent.");
 
+    // Periodically update plinkoBalance in Firestore every 1 minute
     const interval = setInterval(async () => {
       if (!userId) {
         console.log("UserId is not set yet. Skipping balance update.");
@@ -82,6 +104,7 @@
       try {
         await updateDoc(userRef, { plinkoBalance: currentBal });
         console.log('Updated plinkoBalance in Firestore:', currentBal);
+        localStorage.setItem('plinkoBalance', currentBal.toString());
       } catch (err) {
         console.error('Error updating plinkoBalance:', err);
       }
