@@ -101,28 +101,12 @@
     window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app'); // Replace with your parent's origin
     console.log("REQUEST_USERID message sent to parent.");
 
-    // Periodically update plinkoBalance in Firestore every 1 minute
-    const interval = setInterval(async () => {
-      if (!userId) {
-        console.log("UserId is not set yet. Skipping balance update.");
-        return;
-      }
-      const currentBal = Number(localStorage.getItem('plinkoBalance')) || 0;
-console.log(`Updating Firestore for userId ${userId} with plinkoBalance: ${currentBal}`);
-      const userRef = doc(db, 'telegramUsers', userId);
-      try {
-        await updateDoc(userRef, { plinkoBalance: currentBal });
-        console.log('Updated plinkoBalance in Firestore:', currentBal);
-        localStorage.setItem('plinkoBalance', currentBal.toString());
-      } catch (err) {
-        console.error('Error updating plinkoBalance:', err);
-      }
-    }, 60000); // Update every 1 minute
 
+   
     return () => {
       console.log("Cleaning up event listeners and intervals...");
       window.removeEventListener('message', handleMessage);
-      clearInterval(interval);
+    
     };
   });
 </script>
