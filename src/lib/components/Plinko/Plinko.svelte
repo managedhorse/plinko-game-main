@@ -84,6 +84,15 @@
       );
     }
   }
+  // New handler for ADD_BALANCE
+  if (type === 'ADD_BALANCE' && typeof amount === 'number') {
+    console.log(`Adding ${amount} to local Plinko balance.`);
+    const currentBal = get(sessionBalance);
+    const newBal = currentBal + amount;
+    sessionBalance.set(newBal);
+    oldBalance.set(newBal);
+    localStorage.setItem('plinkoBalance', newBal.toString());
+  }
   // New handler for DEDUCT_BALANCE
   if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
     console.log(`Deducting ${amount} from local Plinko balance.`);
