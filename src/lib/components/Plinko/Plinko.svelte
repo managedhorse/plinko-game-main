@@ -8,7 +8,7 @@
   import LastWins from './LastWins.svelte';
   import PlinkoEngine from './PlinkoEngine';
   import { doc, getDoc, updateDoc } from 'firebase/firestore';
-  import { db } from '$lib/firebase';  // Ensure this path is correct based on your project structure
+  import { db } from '$lib/firebase';
 
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
@@ -31,9 +31,14 @@
     };
   };
 
-  // Helper function: always return a number rounded to two decimals
+  // Helper function that rounds a number to two decimals
   function roundToTwo(num: number): number {
-    return parseFloat(num.toFixed(2));
+    return Math.round(num * 100) / 100;
+  }
+
+  // Helper function that returns a string exactly two decimals
+  function formatBalance(num: number): string {
+    return roundToTwo(num).toFixed(2);
   }
 
   // Function to fetch the plinkoBalance from Firestore (fallback)
@@ -44,13 +49,12 @@
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         const userData = userSnap.data();
-        // Ensure the balance is a number and round it
-        const plinkoBal = roundToTwo(Number(userData.plinkoBalance || 0));
-        console.log(`Fetched plinkoBalance for userId ${userId}: ${plinkoBal}`);
-        sessionBalance.set(plinkoBal);
-        oldBalance.set(plinkoBal);
-        // Store as a string with exactly two decimals
-        localStorage.setItem('plinkoBalance', plinkoBal.toFixed(2));
+        // Round and format balance
+        const plinkoBalNum = roundToTwo(Number(userData.plinkoBalance || 0));
+        console.log(`Fetched plinkoBalance for userId ${userId}: ${plinkoBalNum}`);
+        sessionBalance.set(plinkoBalNum);
+        oldBalance.set(plinkoBalNum);
+        localStorage.setItem('plinkoBalance', formatBalance(plinkoBalNum));
       } else {
         console.error('User not found in Firestore for ID', userId);
       }
@@ -59,13 +63,15 @@
     }
   }
 
-  // Function to sync Firestore from local storage (if needed)
+  // Optionally sync Firestore with local storage
   async function syncFirestoreWithLocalStorage() {
     if (!userId) {
       console.error("User ID not available. Cannot sync balance.");
       return;
     }
-    const storedBalance = roundToTwo(Number(localStorage.getItem('plinkoBalance')) || 0);
+    // Convert stored string to a number, then round
+    const stored = localStorage.getItem('plinkoBalance');
+    const storedBalance = stored ? roundToTwo(Number(stored)) : 0;
     console.log(`Syncing Firestore with localStorage plinkoBalance: ${storedBalance}`);
     try {
       const userRef = doc(db, 'telegramUsers', userId);
@@ -90,11 +96,12 @@
         // Check localStorage first:
         const storedBalanceStr = localStorage.getItem('plinkoBalance');
         if (storedBalanceStr !== null) {
-          const storedBalance = roundToTwo(Number(storedBalanceStr));
+          // Use parseFloat to convert the already formatted string.
+          const storedBalance = roundToTwo(parseFloat(storedBalanceStr));
           console.log('Using localStorage plinkoBalance:', storedBalance);
           sessionBalance.set(storedBalance);
           oldBalance.set(storedBalance);
-          // Update Firestore with the local storage balance (already rounded)
+          // Update Firestore with the rounded balance
           (async () => {
             try {
               if (!userId) {
@@ -117,8 +124,10 @@
       if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
         console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
         if (userId) {
-          // Read and round local storage value
-          const storedBalance = roundToTwo(Number(localStorage.getItem('plinkoBalance')) || 0);
+          const storedBalanceStr = localStorage.getItem('plinkoBalance');
+          const storedBalance = storedBalanceStr 
+            ? roundToTwo(parseFloat(storedBalanceStr))
+            : 0;
           console.log(`Sending plinkoBalance to parent from localStorage: ${storedBalance}`);
           window.parent.postMessage(
             { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: storedBalance },
@@ -135,11 +144,12 @@
 
       if (type === 'ADD_BALANCE' && typeof amount === 'number') {
         console.log(`Adding ${amount} to local Plinko balance.`);
+        // Perform arithmetic in cents if needed:
         const currentBal = get(sessionBalance);
         const newBal = roundToTwo(currentBal + amount);
         sessionBalance.set(newBal);
         oldBalance.set(newBal);
-        localStorage.setItem('plinkoBalance', newBal.toFixed(2));
+        localStorage.setItem('plinkoBalance', formatBalance(newBal));
       }
 
       if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
@@ -148,7 +158,7 @@
         const newBal = roundToTwo(currentBal - amount);
         sessionBalance.set(newBal);
         oldBalance.set(newBal);
-        localStorage.setItem('plinkoBalance', newBal.toFixed(2));
+        localStorage.setItem('plinkoBalance', formatBalance(newBal));
       }
     }
 
@@ -156,10 +166,10 @@
 
     // Request userId from parent
     console.log("Requesting userId from parent...");
-    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app'); // Replace with parent's origin
+    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app');
     console.log("REQUEST_USERID message sent to parent.");
 
-    // (Optional) Uncomment this if you want to try syncing later once userId is set.
+    // (Optional) Uncomment if you want to sync later.
     // syncFirestoreWithLocalStorage();
 
     return () => {
