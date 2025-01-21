@@ -56,34 +56,33 @@
     console.log("Component mounted. Setting up message listener and interval...");
     
     function handleMessage(event: MessageEvent) {
-      console.log('Received message:', event.data, 'from', event.origin);
-      const { type, userId: incomingUserId, requestId } = event.data || {};
-      
-      if (type === 'USERID' && incomingUserId) {
-        console.log('USERID received:', incomingUserId);
-        userId = incomingUserId;
-        fetchPlinkoBalance(incomingUserId);
-      }
-
-      if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
-        console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
-        if (userId) {
-          const plinkoBal = get(sessionBalance);
-          console.log(`Sending plinkoBalance to parent: ${plinkoBal}`);
-          window.parent.postMessage(
-            { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: plinkoBal },
-            'https://miniappre.vercel.app' // Replace with your parent's origin
-          );
-        } else {
-          console.error("Cannot transfer balance: userId is not set.");
-          // Optionally, send an error response
-          window.parent.postMessage(
-            { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
-            'https://miniappre.vercel.app' // Replace with your parent's origin
-          );
-        }
-      }
+  console.log('Received message:', event.data, 'from', event.origin);
+  const { type, userId: incomingUserId, requestId } = event.data || {};
+  
+  if (type === 'USERID' && incomingUserId) {
+    console.log('USERID received with:', incomingUserId);
+    userId = incomingUserId;
+    fetchPlinkoBalance(incomingUserId);
+  }
+  
+  if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
+    console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
+    if (userId) {
+      const plinkoBal = get(sessionBalance);
+      console.log(`Sending plinkoBalance to parent: ${plinkoBal}`);
+      window.parent.postMessage(
+        { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: plinkoBal },
+        'https://miniappre.vercel.app' // Replace with parent's origin
+      );
+    } else {
+      console.error("Cannot transfer balance: userId is not set.");
+      window.parent.postMessage(
+        { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
+        'https://miniappre.vercel.app'
+      );
     }
+  }
+}
 
     window.addEventListener('message', handleMessage);
     
