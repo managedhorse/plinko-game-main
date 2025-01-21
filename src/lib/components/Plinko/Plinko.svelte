@@ -150,14 +150,28 @@
       }
   
       if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
-        console.log(`Deducting ${amount} from local Plinko balance.`);
-        const currentCents = toCents(get(sessionBalance));
-        const amountCents = toCents(amount);
-        const newBal = fromCents(currentCents - amountCents);
-        sessionBalance.set(newBal);
-        oldBalance.set(newBal);
-        localStorage.setItem('plinkoBalance', formatBalance(newBal));
-      }
+  console.log(`Deducting ${amount} from local Plinko balance.`);
+
+  // Read the current balance from local storage (this is your source-of-truth)
+  const storedBalanceStr = localStorage.getItem('plinkoBalance');
+  // Parse the stored balance; fallback to the Svelte store value if localStorage is empty
+  const currentBalance = storedBalanceStr ? parseFloat(storedBalanceStr) : get(sessionBalance);
+
+  // Convert the current balance and the deduction amount to cents
+  const currentCents = toCents(currentBalance);
+  const amountCents = toCents(amount);
+
+  // Subtract the cents values exactly
+  const newCents = currentCents - amountCents;
+  const newBalance = fromCents(newCents);
+
+  console.log("Current (cents):", currentCents, "Amount (cents):", amountCents, "New (cents):", newCents);
+
+  // Update your Svelte stores and localStorage with the rounded (formatted) value
+  sessionBalance.set(newBalance);
+  oldBalance.set(newBalance);
+  localStorage.setItem('plinkoBalance', formatBalance(newBalance));
+}
     }
   
     window.addEventListener('message', handleMessage);
