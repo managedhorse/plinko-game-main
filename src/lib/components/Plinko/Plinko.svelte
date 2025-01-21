@@ -67,15 +67,16 @@
   }
   
   if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
-    console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
-    if (userId) {
-      const plinkoBal = get(sessionBalance);
-      console.log(`Sending plinkoBalance to parent: ${plinkoBal}`);
-      window.parent.postMessage(
-        { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: plinkoBal },
-        'https://miniappre.vercel.app' // Replace with parent's origin
-      );
-    } else {
+  console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
+  if (userId) {
+    // Read the latest balance from localStorage
+    const storedBalance = Number(localStorage.getItem('plinkoBalance')) || 0;
+    console.log(`Sending plinkoBalance to parent from localStorage: ${storedBalance}`);
+    window.parent.postMessage(
+      { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: storedBalance },
+      'https://miniappre.vercel.app' // Parent's origin
+    );
+  } else {
       console.error("Cannot transfer balance: userId is not set.");
       window.parent.postMessage(
         { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
