@@ -18,6 +18,17 @@ type BallFrictionsByRowCount = {
   friction: NonNullable<IBodyDefinition['friction']>;
   frictionAirByRowCount: Record<RowCount, NonNullable<IBodyDefinition['frictionAir']>>;
 };
+function roundToTwo(num: number): number {
+  return parseFloat(num.toFixed(2));
+}
+
+function toCents(num: number): number {
+  return Math.round(num * 100);
+}
+
+function fromCents(cents: number): number {
+  return cents / 100;
+}
 
 /**
  * Engine for rendering the Plinko game using [matter-js](https://brm.io/matter-js/).
@@ -101,6 +112,8 @@ class PlinkoEngine {
     },
   };
 
+  
+
   /**
    * Creates the engine and the game's layout.
    *
@@ -118,6 +131,8 @@ class PlinkoEngine {
     betAmount.subscribe((value) => (this.betAmount = value));
     rowCount.subscribe((value) => this.updateRowCount(value));
     riskLevel.subscribe((value) => (this.riskLevel = value));
+
+    
 
     this.engine = Matter.Engine.create({
       timing: {
@@ -212,12 +227,13 @@ class PlinkoEngine {
     betAmountOfExistingBalls.update((value) => ({ ...value, [ball.id]: this.betAmount }));
     
 
-    // Single update combining deduction and localStorage update
-  balance.update((currentBalance) => {
-    const newBalance = currentBalance - this.betAmount;
-    localStorage.setItem('plinkoBalance', newBalance.toString());
-    return newBalance;
-  });
+    balance.update((currentBalance) => {
+      const currentCents = toCents(currentBalance);
+      const betCents = toCents(this.betAmount);
+      const newBalance = fromCents(currentCents - betCents);
+      localStorage.setItem('plinkoBalance', newBalance.toFixed(2));
+      return newBalance;
+    });
   }
 
   /**
@@ -281,12 +297,13 @@ class PlinkoEngine {
           profit,
         },
       ]);
-      // Single update combining addition and localStorage update
-    balance.update((currentBalance) => {
-      const newBalance = currentBalance + payoutValue;
-      localStorage.setItem('plinkoBalance', newBalance.toString());
-      return newBalance;
-    });
+      balance.update((currentBalance) => {
+        const currentCents = toCents(currentBalance);
+        const payoutCents = toCents(payoutValue);
+        const newBalance = fromCents(currentCents + payoutCents);
+        localStorage.setItem('plinkoBalance', newBalance.toFixed(2));
+        return newBalance;
+      });
 
     totalProfitHistory.update((history) => {
       const lastTotalProfit = history.slice(-1)[0];
