@@ -58,7 +58,7 @@
     
     function handleMessage(event: MessageEvent) {
   console.log('Received message:', event.data, 'from', event.origin);
-  const { type, userId: incomingUserId, requestId } = event.data || {};
+  const { type, userId: incomingUserId, requestId, amount } = event.data || {};
   
   if (type === 'USERID' && incomingUserId) {
     console.log('USERID received with:', incomingUserId);
@@ -82,6 +82,15 @@
         'https://miniappre.vercel.app'
       );
     }
+  }
+  // New handler for DEDUCT_BALANCE
+  if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
+    console.log(`Deducting ${amount} from local Plinko balance.`);
+    const currentBal = get(sessionBalance);
+    const newBal = currentBal - amount;
+    sessionBalance.set(newBal);
+    oldBalance.set(newBal);
+    localStorage.setItem('plinkoBalance', newBal.toString());
   }
 }
 
