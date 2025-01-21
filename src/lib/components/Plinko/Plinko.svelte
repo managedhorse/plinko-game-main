@@ -8,7 +8,7 @@
   import LastWins from './LastWins.svelte';
   import PlinkoEngine from './PlinkoEngine';
   import { doc, getDoc, updateDoc } from 'firebase/firestore';
-  import { db } from '$lib/firebase';  // Adjust the path as necessary
+  import { db } from '$lib/firebase';  // Ensure this path is correct based on your project structure
 
   const { WIDTH, HEIGHT } = PlinkoEngine;
 
@@ -19,11 +19,13 @@
 
   // Initialize the Plinko engine
   const initPlinko: Action<HTMLCanvasElement> = (node) => {
+    console.log("Initializing Plinko Engine...");
     $plinkoEngine = new PlinkoEngine(node);
     $plinkoEngine.start();
 
     return {
       destroy: () => {
+        console.log("Destroying Plinko Engine...");
         $plinkoEngine?.stop();
       },
     };
@@ -31,12 +33,14 @@
 
   // Function to fetch the plinkoBalance from Firestore
   async function fetchPlinkoBalance(userId: string) {
-    const userRef = doc(db, 'telegramUsers', userId.toString());
+    console.log(`Fetching plinko balance for userId: ${userId}`);
+    const userRef = doc(db, 'telegramUsers', userId);
     try {
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         const userData = userSnap.data();
         const plinkoBal = userData.plinkoBalance || 0;
+        console.log(`Fetched plinkoBalance for userId ${userId}: ${plinkoBal}`);
         sessionBalance.set(plinkoBal);
         oldBalance.set(plinkoBal);
       } else {
@@ -48,25 +52,33 @@
   }
 
   onMount(() => {
-    window.addEventListener('message', handleMessage);
-
+    console.log("Component mounted. Setting up message listener and interval...");
+    
     function handleMessage(event: MessageEvent) {
-  console.log('Received message:', event.data, 'from', event.origin); 
-  const { type, userId: incomingUserId } = event.data || {};
-  if (type === 'INIT_SESSION' && incomingUserId) {
-    console.log('INIT_SESSION received with userId:', incomingUserId);
-    userId = incomingUserId;
-    fetchPlinkoBalance(incomingUserId);
-  }
-}
+      console.log('Received message:', event.data, 'from', event.origin);
+      const { type, userId: incomingUserId } = event.data || {};
+      if (type === 'USERID' && incomingUserId) {
+        console.log('USERID received:', incomingUserId);
+        userId = incomingUserId;
+        fetchPlinkoBalance(incomingUserId);
+      }
+    }
 
-  window.addEventListener('message', handleMessage);
-
+    window.addEventListener('message', handleMessage);
+    
+    // Request userId from parent
+    console.log("Requesting userId from parent...");
+    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app');
+    console.log("REQUEST_USERID message sent to parent.");
 
     const interval = setInterval(async () => {
-      if (!userId) return;
+      if (!userId) {
+        console.log("UserId is not set yet. Skipping balance update.");
+        return;
+      }
       const currentBal = get(sessionBalance);
-      const userRef = doc(db, 'telegramUsers', userId.toString());
+      console.log(`Updating Firestore for userId ${userId} with plinkoBalance: ${currentBal}`);
+      const userRef = doc(db, 'telegramUsers', userId);
       try {
         await updateDoc(userRef, { plinkoBalance: currentBal });
         console.log('Updated plinkoBalance in Firestore:', currentBal);
@@ -76,11 +88,16 @@
     }, 60000); // Update every 1 minute
 
     return () => {
+      console.log("Cleaning up event listeners and intervals...");
       window.removeEventListener('message', handleMessage);
       clearInterval(interval);
     };
   });
 </script>
+
+<style>
+  /* Add any necessary styles here */
+</style>
 
 <div class="relative bg-gray-900">
   <div class="mx-auto flex h-full flex-col px-4 pb-4" style:max-width={`${WIDTH}px`}>
