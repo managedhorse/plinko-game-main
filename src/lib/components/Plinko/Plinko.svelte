@@ -53,71 +53,87 @@
   }
 
   onMount(() => {
-    console.log("Component mounted. Setting up message listener and interval...");
-    
-    function handleMessage(event: MessageEvent) {
-  console.log('Received message:', event.data, 'from', event.origin);
-  const { type, userId: incomingUserId, requestId, amount } = event.data || {};
-  
-  if (type === 'USERID' && incomingUserId) {
-    console.log('USERID received with:', incomingUserId);
-    userId = incomingUserId;
-    fetchPlinkoBalance(incomingUserId);
-  }
-  
-  if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
-  console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
-  if (userId) {
-    // Read the latest balance from localStorage
+  console.log("Component mounted. Setting up message listener and syncing Firestore with localStorage...");
+
+  async function syncFirestoreWithLocalStorage() {
+    if (!userId) {
+      console.error("User ID not available. Cannot sync balance.");
+      return;
+    }
+
     const storedBalance = Number(localStorage.getItem('plinkoBalance')) || 0;
-    console.log(`Sending plinkoBalance to parent from localStorage: ${storedBalance}`);
-    window.parent.postMessage(
-      { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: storedBalance },
-      'https://miniappre.vercel.app' // Parent's origin
-    );
-  } else {
-      console.error("Cannot transfer balance: userId is not set.");
-      window.parent.postMessage(
-        { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
-        'https://miniappre.vercel.app'
-      );
+    console.log(`Syncing Firestore with localStorage plinkoBalance: ${storedBalance}`);
+
+    try {
+      const userRef = doc(db, 'telegramUsers', userId);
+      await updateDoc(userRef, { plinkoBalance: storedBalance });
+      console.log("Firestore updated with localStorage plinkoBalance:", storedBalance);
+    } catch (err) {
+      console.error("Error syncing Firestore with localStorage plinkoBalance:", err);
     }
   }
-  // New handler for ADD_BALANCE
-  if (type === 'ADD_BALANCE' && typeof amount === 'number') {
-    console.log(`Adding ${amount} to local Plinko balance.`);
-    const currentBal = get(sessionBalance);
-    const newBal = currentBal + amount;
-    sessionBalance.set(newBal);
-    oldBalance.set(newBal);
-    localStorage.setItem('plinkoBalance', newBal.toString());
+
+  syncFirestoreWithLocalStorage();
+
+  function handleMessage(event: MessageEvent) {
+    console.log('Received message:', event.data, 'from', event.origin);
+    const { type, userId: incomingUserId, requestId, amount } = event.data || {};
+
+    if (type === 'USERID' && incomingUserId) {
+      console.log('USERID received with:', incomingUserId);
+      userId = incomingUserId;
+      fetchPlinkoBalance(incomingUserId); // Fetch balance from Firestore as a fallback
+    }
+
+    if (type === 'TRANSFER_BALANCE_REQUEST' && requestId) {
+      console.log('Received TRANSFER_BALANCE_REQUEST with requestId:', requestId);
+      if (userId) {
+        const storedBalance = Number(localStorage.getItem('plinkoBalance')) || 0;
+        console.log(`Sending plinkoBalance to parent from localStorage: ${storedBalance}`);
+        window.parent.postMessage(
+          { type: 'TRANSFER_BALANCE_RESPONSE', requestId, plinkoBalance: storedBalance },
+          'https://miniappre.vercel.app' // Replace with parent's origin
+        );
+      } else {
+        console.error("Cannot transfer balance: userId is not set.");
+        window.parent.postMessage(
+          { type: 'TRANSFER_BALANCE_ERROR', requestId, message: 'User ID not set.' },
+          'https://miniappre.vercel.app'
+        );
+      }
+    }
+
+    if (type === 'ADD_BALANCE' && typeof amount === 'number') {
+      console.log(`Adding ${amount} to local Plinko balance.`);
+      const currentBal = get(sessionBalance);
+      const newBal = currentBal + amount;
+      sessionBalance.set(newBal);
+      oldBalance.set(newBal);
+      localStorage.setItem('plinkoBalance', newBal.toString());
+    }
+
+    if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
+      console.log(`Deducting ${amount} from local Plinko balance.`);
+      const currentBal = get(sessionBalance);
+      const newBal = currentBal - amount;
+      sessionBalance.set(newBal);
+      oldBalance.set(newBal);
+      localStorage.setItem('plinkoBalance', newBal.toString());
+    }
   }
-  // New handler for DEDUCT_BALANCE
-  if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
-    console.log(`Deducting ${amount} from local Plinko balance.`);
-    const currentBal = get(sessionBalance);
-    const newBal = currentBal - amount;
-    sessionBalance.set(newBal);
-    oldBalance.set(newBal);
-    localStorage.setItem('plinkoBalance', newBal.toString());
-  }
-}
 
-    window.addEventListener('message', handleMessage);
-    
-    // Request userId from parent
-    console.log("Requesting userId from parent...");
-    window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app'); // Replace with your parent's origin
-    console.log("REQUEST_USERID message sent to parent.");
+  window.addEventListener('message', handleMessage);
 
+  // Request userId from parent
+  console.log("Requesting userId from parent...");
+  window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app'); // Replace with parent's origin
+  console.log("REQUEST_USERID message sent to parent.");
 
-   
-    return () => {
-      console.log("Cleaning up event listeners and intervals...");
-      window.removeEventListener('message', handleMessage);
-    
-    };
-  });
+  return () => {
+    console.log("Cleaning up event listeners...");
+    window.removeEventListener('message', handleMessage);
+  };
+});
 </script>
 
 <style>
