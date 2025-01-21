@@ -1,3 +1,4 @@
+// plinko.svelte:
 <script lang="ts">
   import { onMount } from 'svelte';
   import { writable, get } from 'svelte/store';
@@ -97,8 +98,8 @@
         console.log("UserId is not set yet. Skipping balance update.");
         return;
       }
-      const currentBal = get(sessionBalance);
-      console.log(`Updating Firestore for userId ${userId} with plinkoBalance: ${currentBal}`);
+      const currentBal = Number(localStorage.getItem('plinkoBalance')) || 0;
+console.log(`Updating Firestore for userId ${userId} with plinkoBalance: ${currentBal}`);
       const userRef = doc(db, 'telegramUsers', userId);
       try {
         await updateDoc(userRef, { plinkoBalance: currentBal });
