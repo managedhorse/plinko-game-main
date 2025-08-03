@@ -149,7 +149,7 @@ class PlinkoEngine {
       options: {
         width: PlinkoEngine.WIDTH,
         height: PlinkoEngine.HEIGHT,
-        background: '#0f1728',
+        background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
         wireframes: false,
       },
     });
