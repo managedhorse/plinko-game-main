@@ -104,16 +104,22 @@
   const rowCounts = rowCountOptions.map((v) => ({ value: v, label: v.toString() }));
 </script>
 
-<div class="flex flex-col gap-2 bg-slate-700 p-3 lg:max-w-80">
+<div
+  class="flex flex-col gap-2 p-3 lg:max-w-80"
+  style="background: linear-gradient(135deg,#ff9a9e 0%,#fecfef 50%,#fad0c4 100%);"
+>
 
   <!-- Top row: Manual/Auto & Drop Ball -->
   <div class="flex gap-2">
-    <div class="w-1/2 flex gap-1 rounded-full bg-slate-900 p-1">
+    <div
+      class="w-1/2 flex gap-1 rounded-full p-1"
+      style="background: linear-gradient(to bottom,#191b33,#1b202d);"
+    >
       {#each betModes as { value, label }}
         <button
           class={twMerge(
             'w-full rounded-full py-2 text-sm font-medium text-white transition disabled:opacity-50',
-            betMode === value && 'bg-slate-600'
+            betMode === value && 'bg-[#F472B6] text-gray-900'
           )}
           disabled={autoBetInterval !== null}
           onclick={() => (betMode = value)}
@@ -124,8 +130,8 @@
       class={twMerge(
         'w-1/2 rounded-md py-3 font-semibold transition-colors',
         autoBetInterval !== null
-          ? 'bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-slate-900'
-          : 'bg-green-500 hover:bg-green-400 active:bg-green-600 text-slate-900',
+          ? 'bg-[#AF40FF] hover:opacity-90 text-gray-900'
+        : 'bg-gradient-to-br from-[#AF40FF] via-[#5B42F3] to-[#00DDEB] text-gray-900',
         isDropBallDisabled && 'bg-neutral-600 text-neutral-400'
       )}
       onclick={handleBetClick}
@@ -155,19 +161,19 @@
           onfocusout={handleBetAmountFocusOut}
           disabled={autoBetInterval !== null}
           class={twMerge(
-            'w-full rounded-l-md border-2 border-slate-600 bg-slate-900 py-2 pl-7 pr-2 text-sm text-white',
+            'w-full rounded-l-md border-2 border-[#273861] bg-[#191b33] py-2 pl-7 pr-2 text-sm text-white',
             (isBetAmountNegative || isBetExceedBalance) && 'border-red-500'
           )}
         />
         <div class="absolute left-3 top-2 text-slate-500">$</div>
       </div>
       <button
-        class="bg-slate-600 px-4 font-bold text-white"
+        class="px-4 font-bold text-white bg-[#AF40FF] hover:opacity-90"
         disabled={autoBetInterval !== null}
         onclick={() => ($betAmount = parseFloat(($betAmount / 2).toFixed(2)))}
       >1/2</button>
       <button
-        class="bg-slate-600 px-4 text-white"
+        class="px-4 text-white bg-[#AF40FF] hover:opacity-90"
         disabled={autoBetInterval !== null}
         onclick={() => ($betAmount = parseFloat(($betAmount * 2).toFixed(2)))}
       >2×</button>
