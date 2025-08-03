@@ -22,19 +22,8 @@
 
   let betMode: BetMode = $state(BetMode.MANUAL);
 
-  /**
-   * When `betMode` is `AUTO`, the number of bets to be placed. Zero means infinite bets.
-   */
   let autoBetInput = $state(0);
-
-  /**
-   * Number of auto bets remaining when `betMode` is `AUTO`.
-   *
-   * - `number`: Finite count of how many bets left. It decrements from `autoBetInput` to 0.
-   * - `null`: For infinite bets (i.e. `autoBetInput` is 0).
-   */
   let autoBetsLeft: number | null = $state(null);
-
   let autoBetInterval: ReturnType<typeof setInterval> | null = $state(null);
 
   let isBetAmountNegative = $derived($betAmount < 0);
@@ -48,22 +37,22 @@
   let hasOutstandingBalls = $derived(Object.keys($betAmountOfExistingBalls).length > 0);
 
   const handleBetAmountFocusOut: FormEventHandler<HTMLInputElement> = (e) => {
-    const parsedValue = parseFloat(e.currentTarget.value.trim());
-    if (isNaN(parsedValue)) {
+    const v = parseFloat(e.currentTarget.value.trim());
+    if (isNaN(v)) {
       $betAmount = -1;
       $betAmount = 0;
     } else {
-      $betAmount = parsedValue;
+      $betAmount = v;
     }
   };
 
   const handleAutoBetInputFocusOut: FormEventHandler<HTMLInputElement> = (e) => {
-    const parsedValue = parseInt(e.currentTarget.value.trim());
-    if (isNaN(parsedValue)) {
+    const v = parseInt(e.currentTarget.value.trim());
+    if (isNaN(v)) {
       autoBetInput = -1;
       autoBetInput = 0;
     } else {
-      autoBetInput = parsedValue;
+      autoBetInput = v;
     }
   };
 
@@ -112,11 +101,12 @@
     { value: RiskLevel.MEDIUM, label: 'Medium' },
     { value: RiskLevel.HIGH, label: 'High' },
   ];
-  const rowCounts = rowCountOptions.map((value) => ({ value, label: value.toString() }));
+  const rowCounts = rowCountOptions.map((v) => ({ value: v, label: v.toString() }));
 </script>
 
 <div class="flex flex-col gap-2 bg-slate-700 p-3 lg:max-w-80">
-  <!-- Top row: Manual/Auto selector & Drop Ball -->
+
+  <!-- Top row: Manual/Auto & Drop Ball -->
   <div class="flex gap-2">
     <div class="w-1/2 flex gap-1 rounded-full bg-slate-900 p-1">
       {#each betModes as { value, label }}
@@ -127,9 +117,7 @@
           )}
           disabled={autoBetInterval !== null}
           onclick={() => (betMode = value)}
-        >
-          {label}
-        </button>
+        >{label}</button>
       {/each}
     </div>
     <button
@@ -213,63 +201,9 @@
     </div>
   </div>
 
-  <!-- Auto-Bet UI + Live Stats on one row -->
-  {#if betMode === BetMode.AUTO}
-    <div class="flex gap-2 items-start">
-      <div class="w-1/2">
-        <label for="autoBetInput" class="text-sm font-medium text-slate-300">Number of Bets</label>
-        <div class="relative">
-          <input
-            id="autoBetInput"
-            type="number"
-            min="0"
-            value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
-            onfocusout={handleAutoBetInputFocusOut}
-            disabled={autoBetInterval !== null}
-            class={twMerge(
-              'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white',
-              isAutoBetInputNegative && 'border-red-500'
-            )}
-          />
-          {#if autoBetInput === 0}
-            <Infinity class="absolute right-3 top-3 text-slate-400 size-4" weight="bold" />
-          {/if}
-        </div>
-        {#if isAutoBetInputNegative}
-          <p class="text-xs text-red-400">Must be ≥ 0.</p>
-        {/if}
-      </div>
-      <div class="w-1/2 flex justify-end pt-5">
-        <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
-          <Tooltip.Trigger asChild let:builder>
-            <button
-              use:builder.action
-              {...builder}
-              onclick={() => ($isLiveStatsOpen = !$isLiveStatsOpen)}
-              class={twMerge(
-                'rounded-full p-2 text-slate-300 transition hover:bg-slate-600 active:bg-slate-500',
-                $isLiveStatsOpen && 'text-slate-100'
-              )}
-            >
-              <ChartLine class="size-6" weight="bold" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content
-            transition={flyAndScale}
-            sideOffset={4}
-            class="z-30 max-w-lg rounded-md bg-white p-3 text-sm font-medium text-gray-950 drop-shadow-xl"
-          >
-            <Tooltip.Arrow />
-            <p>{$isLiveStatsOpen ? 'Close' : 'Open'} Live Stats</p>
-          </Tooltip.Content>
-        </Tooltip.Root>
-      </div>
-    </div>
-  {/if}
-
-  <div class="mt-auto pt-5">
-    <div class="flex items-center gap-4 border-t border-slate-600 pt-3">
-      <!-- Live Stats Button (bottom) -->
+  <!-- Bottom row: Live Stats + (when AUTO) Number of Bets -->
+  <div class="mt-auto">
+    <div class="flex items-center gap-4">
       <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
         <Tooltip.Trigger asChild let:builder>
           <button
@@ -293,6 +227,26 @@
           <p>{$isLiveStatsOpen ? 'Close' : 'Open'} Live Stats</p>
         </Tooltip.Content>
       </Tooltip.Root>
+
+      {#if betMode === BetMode.AUTO}
+        <div class="relative w-1/2">
+          <input
+            id="autoBetInputBottom"
+            type="number"
+            min="0"
+            value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
+            onfocusout={handleAutoBetInputFocusOut}
+            disabled={autoBetInterval !== null}
+            class={twMerge(
+              'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white',
+              isAutoBetInputNegative && 'border-red-500'
+            )}
+          />
+          {#if autoBetInput === 0}
+            <Infinity class="absolute right-3 top-3 size-4 text-slate-400" weight="bold" />
+          {/if}
+        </div>
+      {/if}
     </div>
   </div>
 </div>
