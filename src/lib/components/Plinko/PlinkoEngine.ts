@@ -232,7 +232,7 @@ class PlinkoEngine {
             // scale so coin fits the ballRadius*2 diameter.
             // replace 64 with your actual coin image width/height if different
             xScale: (ballRadius*2) / 150,
-            yScale: (ballRadius*2) / 147
+            yScale: (ballRadius*2) / 150
           }
         },
       },
