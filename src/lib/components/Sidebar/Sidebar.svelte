@@ -50,10 +50,20 @@
   const handleBetAmountFocusOut: FormEventHandler<HTMLInputElement> = (e) => {
     const parsedValue = parseFloat(e.currentTarget.value.trim());
     if (isNaN(parsedValue)) {
-      $betAmount = -1; // If input field is empty, this forces re-render so its value resets to 0
+      $betAmount = -1;
       $betAmount = 0;
     } else {
       $betAmount = parsedValue;
+    }
+  };
+
+  const handleAutoBetInputFocusOut: FormEventHandler<HTMLInputElement> = (e) => {
+    const parsedValue = parseInt(e.currentTarget.value.trim());
+    if (isNaN(parsedValue)) {
+      autoBetInput = -1;
+      autoBetInput = 0;
+    } else {
+      autoBetInput = parsedValue;
     }
   };
 
@@ -69,33 +79,18 @@
       resetAutoBetInterval();
       return;
     }
-
-    // Infinite mode
     if (autoBetsLeft === null) {
       $plinkoEngine?.dropBall();
       return;
     }
-
-    // Finite mode
     if (autoBetsLeft > 0) {
       $plinkoEngine?.dropBall();
       autoBetsLeft -= 1;
     }
-    if (autoBetsLeft === 0 && autoBetInterval !== null) {
+    if (autoBetsLeft === 0) {
       resetAutoBetInterval();
-      return;
     }
   }
-
-  const handleAutoBetInputFocusOut: FormEventHandler<HTMLInputElement> = (e) => {
-    const parsedValue = parseInt(e.currentTarget.value.trim());
-    if (isNaN(parsedValue)) {
-      autoBetInput = -1; // If input field is empty, this forces re-render so its value resets to 0
-      autoBetInput = 0;
-    } else {
-      autoBetInput = parsedValue;
-    }
-  };
 
   function handleBetClick() {
     if (betMode === BetMode.MANUAL) {
@@ -103,7 +98,7 @@
     } else if (autoBetInterval === null) {
       autoBetsLeft = autoBetInput === 0 ? null : autoBetInput;
       autoBetInterval = setInterval(autoBetDropBall, autoBetIntervalMs);
-    } else if (autoBetInterval !== null) {
+    } else {
       resetAutoBetInterval();
     }
   }
@@ -121,30 +116,29 @@
 </script>
 
 <div class="flex flex-col gap-2 bg-slate-700 p-3 lg:max-w-80">
-  <!-- New combined top row -->
+  <!-- Top row: Manual/Auto selector & Drop Ball -->
   <div class="flex gap-2">
-    <!-- Manual/Auto selector half width -->
     <div class="w-1/2 flex gap-1 rounded-full bg-slate-900 p-1">
       {#each betModes as { value, label }}
         <button
-          disabled={autoBetInterval !== null}
-          onclick={() => (betMode = value)}
           class={twMerge(
-            'w-full rounded-full py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:[&:not(:disabled)]:bg-slate-600 active:[&:not(:disabled)]:bg-slate-500',
+            'w-full rounded-full py-2 text-sm font-medium text-white transition disabled:opacity-50',
             betMode === value && 'bg-slate-600'
           )}
+          disabled={autoBetInterval !== null}
+          onclick={() => (betMode = value)}
         >
           {label}
         </button>
       {/each}
     </div>
-    <!-- Drop Ball / Autobet button half width -->
     <button
       class={twMerge(
-        'w-1/2 rounded-md py-3 font-semibold transition-colors disabled:bg-neutral-600 disabled:text-neutral-400',
+        'w-1/2 rounded-md py-3 font-semibold transition-colors',
         autoBetInterval !== null
           ? 'bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-slate-900'
-          : 'bg-green-500 hover:bg-green-400 active:bg-green-600 text-slate-900'
+          : 'bg-green-500 hover:bg-green-400 active:bg-green-600 text-slate-900',
+        isDropBallDisabled && 'bg-neutral-600 text-neutral-400'
       )}
       onclick={handleBetClick}
       disabled={isDropBallDisabled}
@@ -159,46 +153,45 @@
     </button>
   </div>
 
+  <!-- Bet Amount -->
   <div class="relative">
     <label for="betAmount" class="text-sm font-medium text-slate-300">Bet Amount</label>
     <div class="flex">
       <div class="relative flex-1">
         <input
           id="betAmount"
-          value={$betAmount}
-          onfocusout={handleBetAmountFocusOut}
-          disabled={autoBetInterval !== null}
           type="number"
           min="0"
           step="0.01"
-          inputmode="decimal"
+          value={$betAmount}
+          onfocusout={handleBetAmountFocusOut}
+          disabled={autoBetInterval !== null}
           class={twMerge(
-            'w-full rounded-l-md border-2 border-slate-600 bg-slate-900 py-2 pl-7 pr-2 text-sm text-white transition-colors hover:cursor-pointer focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 hover:[&:not(:disabled)]:border-slate-500',
-            (isBetAmountNegative || isBetExceedBalance) &&
-              'border-red-500 focus:border-red-400 hover:[&:not(:disabled)]:border-red-400'
+            'w-full rounded-l-md border-2 border-slate-600 bg-slate-900 py-2 pl-7 pr-2 text-sm text-white',
+            (isBetAmountNegative || isBetExceedBalance) && 'border-red-500'
           )}
         />
-        <div class="absolute left-3 top-2 select-none text-slate-500">$</div>
+        <div class="absolute left-3 top-2 text-slate-500">$</div>
       </div>
       <button
+        class="bg-slate-600 px-4 font-bold text-white"
         disabled={autoBetInterval !== null}
         onclick={() => ($betAmount = parseFloat(($betAmount / 2).toFixed(2)))}
-        class="bg-slate-600 px-4 font-bold text-white transition-colors disabled:opacity-50 hover:bg-slate-500 active:bg-slate-400"
       >1/2</button>
       <button
+        class="bg-slate-600 px-4 text-white"
         disabled={autoBetInterval !== null}
         onclick={() => ($betAmount = parseFloat(($betAmount * 2).toFixed(2)))}
-        class="relative bg-slate-600 px-4 text-sm font-bold text-white transition-colors disabled:opacity-50 hover:bg-slate-500 active:bg-slate-400"
       >2×</button>
     </div>
     {#if isBetAmountNegative}
-      <p class="absolute text-xs leading-5 text-red-400">This must be ≥ 0.</p>
+      <p class="absolute text-xs text-red-400">Must be ≥ 0.</p>
     {:else if isBetExceedBalance}
-      <p class="absolute text-xs leading-5 text-red-400">Can't bet more than your balance!</p>
+      <p class="absolute text-xs text-red-400">Can't exceed balance!</p>
     {/if}
   </div>
 
-  <!-- Risk & Rows on same row -->
+  <!-- Risk & Rows -->
   <div class="flex gap-2">
     <div class="flex-1">
       <label for="riskLevel" class="text-sm font-medium text-slate-300">Risk</label>
@@ -220,68 +213,86 @@
     </div>
   </div>
 
+  <!-- Auto-Bet UI + Live Stats on one row -->
   {#if betMode === BetMode.AUTO}
-    <div>
-      <div class="flex items-center gap-1">
+    <div class="flex gap-2 items-start">
+      <div class="w-1/2">
         <label for="autoBetInput" class="text-sm font-medium text-slate-300">Number of Bets</label>
-        <Popover.Root>
-          <Popover.Trigger class="p-1"><Question class="text-slate-300" weight="bold"/></Popover.Trigger>
-          <Popover.Content transition={flyAndScale} class="z-30 max-w-lg rounded-md bg-white p-3 text-sm font-medium text-gray-950 drop-shadow-xl">
-            <p>Enter '0' for unlimited bets.</p>
-            <Popover.Arrow/>
-          </Popover.Content>
-        </Popover.Root>
-      </div>
-      <div class="relative">
-        <input
-          id="autoBetInput"
-          value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
-          disabled={autoBetInterval !== null}
-          onfocusout={handleAutoBetInputFocusOut}
-          type="number"
-          min="0"
-          inputmode="numeric"
-          class={twMerge(
-            'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white transition-colors hover:cursor-pointer focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 hover:[&:not(:disabled)]:border-slate-500',
-            isAutoBetInputNegative && 'border-red-500 focus:border-red-400'
-          )}
-        />
-        {#if autoBetInput === 0}
-          <Infinity class="absolute right-3 top-3 size-4 text-slate-400" weight="bold"/>
+        <div class="relative">
+          <input
+            id="autoBetInput"
+            type="number"
+            min="0"
+            value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
+            onfocusout={handleAutoBetInputFocusOut}
+            disabled={autoBetInterval !== null}
+            class={twMerge(
+              'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white',
+              isAutoBetInputNegative && 'border-red-500'
+            )}
+          />
+          {#if autoBetInput === 0}
+            <Infinity class="absolute right-3 top-3 text-slate-400 size-4" weight="bold" />
+          {/if}
+        </div>
+        {#if isAutoBetInputNegative}
+          <p class="text-xs text-red-400">Must be ≥ 0.</p>
         {/if}
       </div>
-      {#if isAutoBetInputNegative}
-        <p class="text-xs leading-5 text-red-400">This must be ≥ 0.</p>
-      {/if}
+      <div class="w-1/2 flex justify-end pt-5">
+        <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
+          <Tooltip.Trigger asChild let:builder>
+            <button
+              use:builder.action
+              {...builder}
+              onclick={() => ($isLiveStatsOpen = !$isLiveStatsOpen)}
+              class={twMerge(
+                'rounded-full p-2 text-slate-300 transition hover:bg-slate-600 active:bg-slate-500',
+                $isLiveStatsOpen && 'text-slate-100'
+              )}
+            >
+              <ChartLine class="size-6" weight="bold" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content
+            transition={flyAndScale}
+            sideOffset={4}
+            class="z-30 max-w-lg rounded-md bg-white p-3 text-sm font-medium text-gray-950 drop-shadow-xl"
+          >
+            <Tooltip.Arrow />
+            <p>{$isLiveStatsOpen ? 'Close' : 'Open'} Live Stats</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      </div>
     </div>
   {/if}
 
   <div class="mt-auto pt-5">
-  <div class="flex items-center gap-4 border-t border-slate-600 pt-3">
-    <!-- Live Stats Button only -->
-    <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
-      <Tooltip.Trigger asChild let:builder>
-        <button
-          use:builder.action
-          {...builder}
-          onclick={() => ($isLiveStatsOpen = !$isLiveStatsOpen)}
-          class={twMerge(
-            'rounded-full p-2 text-slate-300 transition hover:bg-slate-600 active:bg-slate-500',
-            $isLiveStatsOpen && 'text-slate-100'
-          )}
+    <div class="flex items-center gap-4 border-t border-slate-600 pt-3">
+      <!-- Live Stats Button (bottom) -->
+      <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
+        <Tooltip.Trigger asChild let:builder>
+          <button
+            use:builder.action
+            {...builder}
+            onclick={() => ($isLiveStatsOpen = !$isLiveStatsOpen)}
+            class={twMerge(
+              'rounded-full p-2 text-slate-300 transition hover:bg-slate-600 active:bg-slate-500',
+              $isLiveStatsOpen && 'text-slate-100'
+            )}
+          >
+            <ChartLine class="size-6" weight="bold" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content
+          transition={flyAndScale}
+          sideOffset={4}
+          class="z-30 max-w-lg rounded-md bg-white p-3 text-sm font-medium text-gray-950 drop-shadow-xl"
         >
-          <ChartLine class="size-6" weight="bold" />
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Content
-        transition={flyAndScale}
-        sideOffset={4}
-        class="z-30 max-w-lg rounded-md bg-white p-3 text-sm font-medium text-gray-950 drop-shadow-xl"
-      >
-        <Tooltip.Arrow />
-        <p>{$isLiveStatsOpen ? 'Close' : 'Open'} Live Stats</p>
-      </Tooltip.Content>
-    </Tooltip.Root>
+          <Tooltip.Arrow />
+          <p>{$isLiveStatsOpen ? 'Close' : 'Open'} Live Stats</p>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </div>
   </div>
-</div>
 </div>
