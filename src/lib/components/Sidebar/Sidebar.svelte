@@ -201,9 +201,10 @@
     </div>
   </div>
 
-  <!-- Bottom row: Live Stats + (when AUTO) Number of Bets -->
+  <!-- Bottom row: Live Stats + (when AUTO) Number of Bets with label -->
   <div class="mt-auto">
     <div class="flex items-center gap-4">
+      <!-- Live Stats Button -->
       <Tooltip.Root openDelay={0} closeOnPointerDown={false}>
         <Tooltip.Trigger asChild let:builder>
           <button
@@ -229,21 +230,29 @@
       </Tooltip.Root>
 
       {#if betMode === BetMode.AUTO}
-        <div class="relative w-1/2">
-          <input
-            id="autoBetInputBottom"
-            type="number"
-            min="0"
-            value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
-            onfocusout={handleAutoBetInputFocusOut}
-            disabled={autoBetInterval !== null}
-            class={twMerge(
-              'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white',
-              isAutoBetInputNegative && 'border-red-500'
-            )}
-          />
-          {#if autoBetInput === 0}
-            <Infinity class="absolute right-3 top-3 size-4 text-slate-400" weight="bold" />
+        <div class="flex flex-col w-1/2">
+          <label for="autoBetInputBottom" class="text-sm font-medium text-slate-300">
+            Number of Bets
+          </label>
+          <div class="relative">
+            <input
+              id="autoBetInputBottom"
+              type="number"
+              min="0"
+              value={autoBetInterval === null ? autoBetInput : autoBetsLeft ?? 0}
+              onfocusout={handleAutoBetInputFocusOut}
+              disabled={autoBetInterval !== null}
+              class={twMerge(
+                'w-full rounded-md border-2 border-slate-600 bg-slate-900 py-2 pl-3 pr-8 text-sm text-white',
+                isAutoBetInputNegative && 'border-red-500'
+              )}
+            />
+            {#if autoBetInput === 0}
+              <Infinity class="absolute right-3 top-3 size-4 text-slate-400" weight="bold" />
+            {/if}
+          </div>
+          {#if isAutoBetInputNegative}
+            <p class="text-xs leading-5 text-red-400">Must be ≥ 0.</p>
           {/if}
         </div>
       {/if}
