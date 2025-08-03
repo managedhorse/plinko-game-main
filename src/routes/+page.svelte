@@ -14,27 +14,39 @@
   });
 </script>
 
+<svelte:head>
+  <!-- Slackey font import -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Slackey&display=swap"
+    rel="stylesheet"
+  />
+</svelte:head>
+
 <svelte:window onbeforeunload={writeBalanceToLocalStorage} />
 
-<!-- now with min-h-screen and grass background -->
 <div
   class="relative flex min-h-screen w-full flex-col bg-cover bg-center"
   style="background-image: url({grassBg});"
 >
-  <nav class="sticky top-0 z-10 w-full bg-gray-700 px-5 drop-shadow-lg">
-    <div class="mx-auto flex h-14 max-w-7xl items-center justify-between">
-      <span class="text-2xl font-bold text-white">Plink Mianus</span>
-      <div class="mx-auto">
-        <Balance />
-      </div>
+  <nav
+    class="sticky top-0 z-10 w-full bg-gradient-to-r from-[#ff9a9e] via-[#fad0c4] to-[#ff9a9e] px-6 py-2 drop-shadow-2xl"
+  >
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between">
+      <span
+        class="text-3xl font-slackey text-gray-900"
+        style="font-family: 'Slackey', cursive;"
+      >
+        Plink Mianus
+      </span>
+      <Balance />
     </div>
   </nav>
 
-  <div class="flex-1 px-5">
-    <div class="mx-auto mt-5 min-w-[300px] max-w-xl drop-shadow-xl md:mt-10 lg:max-w-7xl">
-      <div class="flex flex-col-reverse overflow-hidden rounded-lg lg:w-full lg:flex-row">
+  <div class="flex-1 px-4 md:px-8 lg:px-12">
+    <div class="mx-auto mt-6 min-w-[300px] max-w-xl md:mt-10 lg:max-w-7xl">
+      <div class="flex flex-col-reverse overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md lg:flex-row">
         <Sidebar />
-        <div class="flex-1">
+        <div class="flex-1 p-4">
           <Plinko />
         </div>
       </div>
@@ -44,3 +56,9 @@
   <SettingsWindow />
   <LiveStatsWindow />
 </div>
+
+<style>
+  :global(.font-slackey) {
+    font-family: "Slackey", cursive;
+  }
+</style>
