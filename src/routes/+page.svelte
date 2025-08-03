@@ -31,7 +31,7 @@
   <nav
     class="sticky top-0 z-10 w-full bg-gradient-to-r from-[#ff9a9e] via-[#fad0c4] to-[#ff9a9e] px-6 py-2 drop-shadow-2xl"
   >
-    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between">
+    <div class="mx-auto flex h-8 max-w-7xl items-center justify-between">
       <span
         class="text-1xl font-slackey text-gray-900"
         style="font-family: 'Slackey', cursive;"
@@ -44,9 +44,9 @@
 
   <div class="flex-1 px-4 md:px-8 lg:px-12">
     <div class="mx-auto mt-6 min-w-[300px] max-w-xl md:mt-10 lg:max-w-7xl">
-      <div class="flex flex-col-reverse overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md lg:flex-row">
+      <div class="flex flex-col-reverse overflow-hidden rounded-lg bg-white/20 backdrop-blur-sm lg:flex-row">
         <Sidebar />
-        <div class="flex-1 p-4">
+        <div class="flex-1 p-2">
           <Plinko />
         </div>
       </div>
