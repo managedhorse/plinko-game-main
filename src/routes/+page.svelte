@@ -33,7 +33,7 @@
   >
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between">
       <span
-        class="text-3xl font-slackey text-gray-900"
+        class="text-1xl font-slackey text-gray-900"
         style="font-family: 'Slackey', cursive;"
       >
         Plink Mianus
