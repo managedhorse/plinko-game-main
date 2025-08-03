@@ -13,6 +13,8 @@ import { getRandomBetween } from '$lib/utils/numbers';
 import Matter, { type IBodyDefinition } from 'matter-js';
 import { get } from 'svelte/store';
 import { v4 as uuidv4 } from 'uuid';
+import coinSmall  from '$lib/assets/coinsmall.webp';
+import coinSmallR from '$lib/assets/coinsmallR.webp';
 
 type BallFrictionsByRowCount = {
   friction: NonNullable<IBodyDefinition['friction']>;
@@ -36,6 +38,8 @@ function fromCents(cents: number): number {
  * The engine will read/write data to Svelte stores during game state changes.
  */
 class PlinkoEngine {
+
+  private _useAlternateCoin = false;
   /**
    * The canvas element to render the game to.
    */
@@ -202,6 +206,10 @@ class PlinkoEngine {
     const ballRadius = this.pinRadius * 2;
     const { friction, frictionAirByRowCount } = PlinkoEngine.ballFrictions;
 
+    // 3) pick which texture to use this drop:
+    const texture = this._useAlternateCoin ? coinSmallR : coinSmall;
+    this._useAlternateCoin = !this._useAlternateCoin;
+
     const ball = Matter.Bodies.circle(
       getRandomBetween(
         this.canvas.width / 2 - ballOffsetRangeX,
@@ -218,7 +226,14 @@ class PlinkoEngine {
           mask: PlinkoEngine.PIN_CATEGORY, // Collide with pins only, but not other balls
         },
         render: {
-          fillStyle: '#ff0000',
+          // use sprite rather than solid fill
+          sprite: {
+            texture,
+            // scale so coin fits the ballRadius*2 diameter.
+            // replace 64 with your actual coin image width/height if different
+            xScale: (ballRadius*2) / 64,
+            yScale: (ballRadius*2) / 64
+          }
         },
       },
     );
