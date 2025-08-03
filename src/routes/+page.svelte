@@ -1,5 +1,4 @@
 <script lang="ts">
-  import grassBg from '$lib/assets/grassbg.webp';
   import logo from '$lib/assets/logo.svg';
   import Balance from '$lib/components/Balance.svelte';
   import LiveStatsWindow from '$lib/components/LiveStatsWindow/LiveStatsWindow.svelte';
@@ -16,14 +15,12 @@
 
 <svelte:window onbeforeunload={writeBalanceToLocalStorage} />
 
-<!-- Apply your grassbg.webp as the background here -->
-<div
-  class="relative flex w-full h-full flex-col bg-cover bg-center"
-  style="background-image: url({grassBg});"
->
+<div class="relative flex min-h-dvh w-full flex-col">
   <nav class="sticky top-0 z-10 w-full bg-gray-700 px-5 drop-shadow-lg">
     <div class="mx-auto flex h-14 max-w-7xl items-center justify-between">
-      <span class="text-2xl font-bold text-white">Plink Mianus</span>
+      <span class="text-2xl font-bold text-white">
+      Plink Mianus
+    </span>
       <div class="mx-auto">
         <Balance />
       </div>
@@ -43,4 +40,11 @@
 
   <SettingsWindow />
   <LiveStatsWindow />
+
 </div>
+
+<style>
+  :global(body) {
+    @apply bg-gray-800;
+  }
+</style>
