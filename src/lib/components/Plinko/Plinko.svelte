@@ -1,5 +1,4 @@
 <script lang="ts">
-  import grassBg from '$lib/assets/grassbg.webp';
   import { onMount } from 'svelte';
   import { writable, get } from 'svelte/store';
   import { plinkoEngine, balance as oldBalance } from '$lib/stores/game'; 
@@ -151,32 +150,51 @@
       }
   
       if (type === 'DEDUCT_BALANCE' && typeof amount === 'number') {
-        console.log(`Deducting ${amount} from local Plinko balance.`);
-        const storedBalanceStr = localStorage.getItem('plinkoBalance');
-        const currentBalance = storedBalanceStr ? parseFloat(storedBalanceStr) : get(sessionBalance);
-        const currentCents = toCents(currentBalance);
-        const amountCents = toCents(amount);
-        const newCents = currentCents - amountCents;
-        const newBalance = fromCents(newCents);
-        sessionBalance.set(newBalance);
-        oldBalance.set(newBalance);
-        localStorage.setItem('plinkoBalance', formatBalance(newBalance));
-      }
+  console.log(`Deducting ${amount} from local Plinko balance.`);
+
+  // Read the current balance from local storage (this is your source-of-truth)
+  const storedBalanceStr = localStorage.getItem('plinkoBalance');
+  // Parse the stored balance; fallback to the Svelte store value if localStorage is empty
+  const currentBalance = storedBalanceStr ? parseFloat(storedBalanceStr) : get(sessionBalance);
+
+  // Convert the current balance and the deduction amount to cents
+  const currentCents = toCents(currentBalance);
+  const amountCents = toCents(amount);
+
+  // Subtract the cents values exactly
+  const newCents = currentCents - amountCents;
+  const newBalance = fromCents(newCents);
+
+  console.log("Current (cents):", currentCents, "Amount (cents):", amountCents, "New (cents):", newCents);
+
+  // Update your Svelte stores and localStorage with the rounded (formatted) value
+  sessionBalance.set(newBalance);
+  oldBalance.set(newBalance);
+  localStorage.setItem('plinkoBalance', formatBalance(newBalance));
+}
     }
   
     window.addEventListener('message', handleMessage);
+  
+    console.log("Requesting userId from parent...");
     window.parent.postMessage({ type: 'REQUEST_USERID' }, 'https://miniappre.vercel.app');
-    return () => window.removeEventListener('message', handleMessage);
+    console.log("REQUEST_USERID message sent to parent.");
+  
+    // Optionally, uncomment if you want to sync Firestore later.
+    // syncFirestoreWithLocalStorage();
+  
+    return () => {
+      console.log("Cleaning up event listeners...");
+      window.removeEventListener('message', handleMessage);
+    };
   });
 </script>
   
 <style>
-  .grass-bg {
-    background: url("{grassBg}") center/cover no-repeat;
-  }
+  /* Add any necessary styles here */
 </style>
   
-<div class="relative grass-bg">
+<div class="relative bg-gray-900">
   <div class="mx-auto flex h-full flex-col px-4 pb-4" style:max-width={`${WIDTH}px`}>
     <div class="relative w-full" style:aspect-ratio={`${WIDTH} / ${HEIGHT}`}>
       {#if $plinkoEngine === null}
