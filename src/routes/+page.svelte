@@ -18,7 +18,9 @@
 <div class="relative flex min-h-dvh w-full flex-col">
   <nav class="sticky top-0 z-10 w-full bg-gray-700 px-5 drop-shadow-lg">
     <div class="mx-auto flex h-14 max-w-7xl items-center justify-between">
-      <img src={logo} alt="logo" class="h-6 sm:h-7" />
+      <span class="text-2xl font-bold text-white">
+      Plink Mianus
+    </span>
       <div class="mx-auto">
         <Balance />
       </div>
