@@ -185,24 +185,26 @@
     {/if}
   </div>
 
-  <div>
-    <label for="riskLevel" class="text-sm font-medium text-slate-300">Risk</label>
-    <Select
-      id="riskLevel"
-      bind:value={$riskLevel}
-      items={riskLevels}
-      disabled={hasOutstandingBalls || autoBetInterval !== null}
-    />
-  </div>
-
-  <div>
-    <label for="rowCount" class="text-sm font-medium text-slate-300">Rows</label>
-    <Select
-      id="rowCount"
-      bind:value={$rowCount}
-      items={rowCounts}
-      disabled={hasOutstandingBalls || autoBetInterval !== null}
-    />
+  <!-- Group Risk and Rows selectors on one row -->
+  <div class="flex gap-2">
+    <div class="flex-1">
+      <label for="riskLevel" class="text-sm font-medium text-slate-300">Risk</label>
+      <Select
+        id="riskLevel"
+        bind:value={$riskLevel}
+        items={riskLevels}
+        disabled={hasOutstandingBalls || autoBetInterval !== null}
+      />
+    </div>
+    <div class="flex-1">
+      <label for="rowCount" class="text-sm font-medium text-slate-300">Rows</label>
+      <Select
+        id="rowCount"
+        bind:value={$rowCount}
+        items={rowCounts}
+        disabled={hasOutstandingBalls || autoBetInterval !== null}
+      />
+    </div>
   </div>
 
   {#if betMode === BetMode.AUTO}
