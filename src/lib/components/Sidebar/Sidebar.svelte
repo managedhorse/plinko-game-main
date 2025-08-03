@@ -149,7 +149,7 @@
 
   <!-- Bet Amount -->
   <div class="relative">
-    <label for="betAmount" class="text-sm font-medium text-slate-300">Bet Amount</label>
+    <label for="betAmount" class="text-sm font-medium text-pink-900">Bet Amount</label>
     <div class="flex">
       <div class="relative flex-1">
         <input
@@ -188,7 +188,7 @@
   <!-- Risk & Rows -->
   <div class="flex gap-2">
     <div class="flex-1">
-      <label for="riskLevel" class="text-sm font-medium text-slate-300">Risk</label>
+      <label for="riskLevel" class="text-sm font-medium text-pink-900">Risk</label>
       <Select
         id="riskLevel"
         bind:value={$riskLevel}
@@ -197,7 +197,7 @@
       />
     </div>
     <div class="flex-1">
-      <label for="rowCount" class="text-sm font-medium text-slate-300">Rows</label>
+      <label for="rowCount" class="text-sm font-medium text-pink-900">Rows</label>
       <Select
         id="rowCount"
         bind:value={$rowCount}
@@ -218,7 +218,7 @@
             {...builder}
             onclick={() => ($isLiveStatsOpen = !$isLiveStatsOpen)}
             class={twMerge(
-              'rounded-full p-2 text-slate-300 transition hover:bg-slate-600 active:bg-slate-500',
+              'rounded-full p-2 text-pink-900 transition hover:bg-slate-600 active:bg-slate-500',
               $isLiveStatsOpen && 'text-slate-100'
             )}
           >
@@ -237,7 +237,7 @@
 
       {#if betMode === BetMode.AUTO}
         <div class="flex flex-col w-1/2">
-          <label for="autoBetInputBottom" class="text-sm font-medium text-slate-300">
+          <label for="autoBetInputBottom" class="text-sm font-medium text-pink-900">
             Number of Bets
           </label>
           <div class="relative">
