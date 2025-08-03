@@ -194,7 +194,7 @@
   /* Add any necessary styles here */
 </style>
   
-<div class="relative bg-gray-900">
+<div class="relative bg-[linear-gradient(135deg,_#ff9a9e_0%,_#fad0c4_100%)]">
   <div class="mx-auto flex h-full flex-col px-4 pb-4" style:max-width={`${WIDTH}px`}>
     <div class="relative w-full" style:aspect-ratio={`${WIDTH} / ${HEIGHT}`}>
       {#if $plinkoEngine === null}
