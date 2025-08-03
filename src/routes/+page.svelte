@@ -18,7 +18,7 @@
 
 <!-- Apply your grassbg.webp as the background here -->
 <div
-  class="relative flex w-full flex-col bg-cover bg-center"
+  class="relative flex w-full h-full flex-col bg-cover bg-center"
   style="background-image: url({grassBg});"
 >
   <nav class="sticky top-0 z-10 w-full bg-gray-700 px-5 drop-shadow-lg">
