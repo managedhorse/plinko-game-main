@@ -120,7 +120,7 @@
   const rowCounts = rowCountOptions.map((value) => ({ value, label: value.toString() }));
 </script>
 
-<div class="flex flex-col gap-5 bg-slate-700 p-3 lg:max-w-80">
+<div class="flex flex-col gap-2 bg-slate-700 p-3 lg:max-w-80">
   <div class="flex gap-1 rounded-full bg-slate-900 p-1">
     {#each betModes as { value, label }}
       <button
